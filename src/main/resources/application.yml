@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: orbitflow
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/orbitflow}
+    username: ${SPRING_DATASOURCE_USERNAME:orbitflow}
+    password: ${SPRING_DATASOURCE_PASSWORD:orbitflow}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 8
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  quartz:
+    job-store-type: memory
+    properties:
+      org.quartz.threadPool.threadCount: 5
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: orbitflow
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+orbitflow:
+  jwt:
+    secret: ${ORBITFLOW_JWT_SECRET:change-me-to-a-256-bit-secret-change-me-to-a-256-bit-secret-0123456789}
+    access-token-ttl-minutes: 30
+    refresh-token-ttl-days: 14
+  s3:
+    endpoint: ${ORBITFLOW_S3_ENDPOINT:http://localhost:9000}
+    access-key: ${ORBITFLOW_S3_ACCESS_KEY:minioadmin}
+    secret-key: ${ORBITFLOW_S3_SECRET_KEY:minioadmin123}
+    bucket: ${ORBITFLOW_S3_BUCKET:orbitflow-attachments}
+    region: us-east-1
+  mail:
+    from: "OrbitFlow <no-reply@orbitflow.local>"
+  frontend:
+    url: ${ORBITFLOW_FRONTEND_URL:http://localhost:5173}
+
+logging:
+  level:
+    com.orbitflow: INFO
+    org.springframework.security: WARN

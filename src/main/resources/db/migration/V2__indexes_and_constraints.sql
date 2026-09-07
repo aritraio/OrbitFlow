@@ -1,0 +1,31 @@
+-- OrbitFlow V2: indexes and constraints for performance + tenant isolation
+
+CREATE INDEX idx_wsm_workspace ON workspace_memberships(workspace_id);
+CREATE INDEX idx_wsm_user ON workspace_memberships(user_id);
+CREATE INDEX idx_inv_workspace ON invitations(workspace_id);
+CREATE INDEX idx_projects_workspace ON projects(workspace_id);
+CREATE INDEX idx_pm_project ON project_memberships(project_id);
+CREATE INDEX idx_pm_user ON project_memberships(user_id);
+CREATE INDEX idx_boards_project ON boards(project_id);
+CREATE INDEX idx_columns_board ON board_columns(board_id);
+CREATE INDEX idx_tasks_workspace ON tasks(workspace_id);
+CREATE INDEX idx_tasks_project ON tasks(project_id);
+CREATE INDEX idx_tasks_column ON tasks(column_id);
+CREATE INDEX idx_tasks_due ON tasks(due_date);
+CREATE INDEX idx_comments_task ON comments(task_id);
+CREATE INDEX idx_comment_rev_comment ON comment_revisions(comment_id);
+CREATE INDEX idx_docs_project ON documents(project_id);
+CREATE INDEX idx_docs_parent ON documents(parent_id);
+CREATE INDEX idx_doc_rev_doc ON document_revisions(document_id);
+CREATE INDEX idx_att_task ON attachments(task_id);
+CREATE INDEX idx_att_workspace ON attachments(workspace_id);
+CREATE INDEX idx_watchers_task ON watchers(task_id);
+CREATE INDEX idx_notif_recipient ON notifications(recipient_id);
+CREATE INDEX idx_notif_workspace ON notifications(workspace_id);
+CREATE INDEX idx_notif_dedupe ON notifications(dedupe_key);
+CREATE INDEX idx_activity_ws ON activity_events(workspace_id);
+CREATE INDEX idx_activity_resource ON activity_events(resource_type, resource_id);
+CREATE INDEX idx_outbox_status ON outbox_events(status);
+CREATE INDEX idx_outbox_aggregate ON outbox_events(aggregate_type, aggregate_id);
+CREATE INDEX idx_sessions_user ON user_sessions(user_id);
+CREATE INDEX idx_milestones_project ON milestones(project_id);

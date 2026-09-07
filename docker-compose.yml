@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orbitflow-postgres
+    environment:
+      POSTGRES_DB: orbitflow
+      POSTGRES_USER: orbitflow
+      POSTGRES_PASSWORD: orbitflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbitflow -d orbitflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: orbitflow-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: orbitflow-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: orbitflow-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
+  app:
+    build: .
+    container_name: orbitflow-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orbitflow
+      SPRING_DATASOURCE_USERNAME: orbitflow
+      SPRING_DATASOURCE_PASSWORD: orbitflow
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      ORBITFLOW_S3_ENDPOINT: http://minio:9000
+      ORBITFLOW_S3_ACCESS_KEY: minioadmin
+      ORBITFLOW_S3_SECRET_KEY: minioadmin123
+      ORBITFLOW_S3_BUCKET: orbitflow-attachments
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      ORBITFLOW_JWT_SECRET: ${ORBITFLOW_JWT_SECRET:-change-me-to-a-256-bit-secret-change-me-to-a-256-bit-secret}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
