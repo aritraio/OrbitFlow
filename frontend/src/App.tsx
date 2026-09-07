@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, Navigate, NavLink } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { workspacesApi, projectsApi, type Workspace, type Project } from './api/models';
 import { KanbanBoard } from './components/KanbanBoard';
+import { GlobalSearch } from './components/GlobalSearch';
+import { DocumentWiki } from './components/DocumentWiki';
+import { ReportsView } from './components/ReportsView';
+import { WorkspaceMembersModal } from './components/WorkspaceMembersModal';
 
 function LoginPage() {
   const { login, register } = useAuth();
@@ -65,6 +69,7 @@ function HomePage() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [wsId, setWsId] = useState<string | null>(() => localStorage.getItem('orbitflow.workspaceId'));
+  const [membersOpen, setMembersOpen] = useState(false);
 
   useEffect(() => {
     workspacesApi.list().then((ws) => {
@@ -84,16 +89,23 @@ function HomePage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold">OrbitFlow</h1>
         <div className="flex items-center gap-2">
+          <GlobalSearch />
           <WorkspaceSwitcher workspaces={workspaces} active={wsId} onPick={(id) => { setWsId(id); localStorage.setItem('orbitflow.workspaceId', id); }} />
+          {wsId ? (
+            <button onClick={() => setMembersOpen(true)} className="rounded border px-2 py-1 text-xs dark:border-slate-700">
+              Members
+            </button>
+          ) : null}
           <span className="text-xs text-slate-500">@{tokens.username}</span>
           <button onClick={logout} className="text-xs underline">
             Logout
           </button>
         </div>
       </header>
+      {membersOpen && wsId ? <WorkspaceMembersModal workspaceId={wsId} onClose={() => setMembersOpen(false)} /> : null}
       <div className="mt-4 grid gap-2">
         {projects.map((p) => (
           <Link key={p.id} to={`/projects/${p.id}`} className="rounded-lg border p-3 hover:shadow dark:border-slate-700">
@@ -114,10 +126,30 @@ function ProjectPage() {
   if (!projectId) return <div>Missing project</div>;
   return (
     <div>
-      <Link to="/" className="p-4 text-sm underline">
-        ← All projects
-      </Link>
-      <KanbanBoard projectId={projectId} />
+      <div className="flex items-center gap-4 p-4 pb-0">
+        <Link to="/" className="text-sm underline">
+          ← All projects
+        </Link>
+        <nav className="flex gap-1 text-sm">
+          <NavLink to={`/projects/${projectId}`} end className={({ isActive }) => `rounded px-2 py-1 ${isActive ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'underline'}`}>
+            Board
+          </NavLink>
+          <NavLink to={`/projects/${projectId}/docs`} className={({ isActive }) => `rounded px-2 py-1 ${isActive ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'underline'}`}>
+            Docs
+          </NavLink>
+          <NavLink to={`/projects/${projectId}/reports`} className={({ isActive }) => `rounded px-2 py-1 ${isActive ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'underline'}`}>
+            Reports
+          </NavLink>
+        </nav>
+        <span className="ml-auto">
+          <GlobalSearch projectId={projectId} />
+        </span>
+      </div>
+      <Routes>
+        <Route index element={<KanbanBoard projectId={projectId} />} />
+        <Route path="docs" element={<DocumentWiki projectId={projectId} />} />
+        <Route path="reports" element={<ReportsView projectId={projectId} />} />
+      </Routes>
     </div>
   );
 }
@@ -129,7 +161,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<HomePage />} />
-          <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/projects/:projectId/*" element={<ProjectPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

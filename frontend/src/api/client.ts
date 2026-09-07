@@ -9,8 +9,28 @@ export interface AuthTokens {
 }
 
 let tokens: AuthTokens | null = null;
+
+function readLS(key: string): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(key);
+  } catch {
+    return null; // SSR / private-mode: storage unavailable
+  }
+}
+
+function writeLS(key: string, value: string | null): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  } catch {
+    // storage unavailable: tokens stay in memory only
+  }
+}
+
 try {
-  const raw = localStorage.getItem('orbitflow.tokens');
+  const raw = readLS('orbitflow.tokens');
   if (raw) tokens = JSON.parse(raw);
 } catch {
   tokens = null;
@@ -22,8 +42,7 @@ export function getTokens(): AuthTokens | null {
 
 export function setTokens(t: AuthTokens | null) {
   tokens = t;
-  if (t) localStorage.setItem('orbitflow.tokens', JSON.stringify(t));
-  else localStorage.removeItem('orbitflow.tokens');
+  writeLS('orbitflow.tokens', t ? JSON.stringify(t) : null);
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -32,7 +51,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...((init.headers as Record<string, string>) ?? {}),
   };
   if (tokens?.accessToken) headers['Authorization'] = `Bearer ${tokens.accessToken}`;
-  const wsId = localStorage.getItem('orbitflow.workspaceId');
+  const wsId = readLS('orbitflow.workspaceId');
   if (wsId) headers['X-Workspace-Id'] = wsId;
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (res.status === 204) return undefined as T;
