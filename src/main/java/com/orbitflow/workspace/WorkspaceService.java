@@ -11,6 +11,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -175,6 +176,7 @@ public class WorkspaceService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_principals", key = "#targetUserId.toString()")
     public void deactivateMember(UUID requesterId, UUID workspaceId, UUID targetUserId) {
         WorkspaceMembership me = requireActiveMember(requesterId, workspaceId);
         if (!policy.canManageMembers(me.getRole())) throw new ForbiddenOperationException("Only admins can remove members");

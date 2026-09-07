@@ -5,10 +5,10 @@
 | **Phase 1** | Eliminate In-Memory Table Scans & Add Indexed JPQL Queries | `[COMPLETED]` | `./gradlew test` passes with zero `findAll()` in search/reminders |
 | **Phase 2** | Fix WebSocket Interval Leak & Precision Neighbor Drag-and-Drop | `[COMPLETED]` | Clean frontend build, no heartbeat leaks |
 | **Phase 3** | Eliminate Static Bean Anti-Pattern in WebSocket Interceptor | `[COMPLETED]` | Clean `@Lazy` injection, all WebSocket tests pass |
-| **Phase 4** | Cache UserPrincipal for Stateless JWT Authentication | `[NOT STARTED]` | Spring Cache active, zero redundant DB calls on auth |
+| **Phase 4** | Cache UserPrincipal for Stateless JWT Authentication | `[COMPLETED]` | Spring Cache active, zero redundant DB calls on auth |
 | **Phase 5** | Expand Frontend UI Surface (Wiki, Search, Reports, Members) | `[NOT STARTED]` | React SPA builds cleanly with new views |
 | **Phase 6** | Docker Healthcheck & Full End-to-End Verification | `[NOT STARTED]` | 100% tests green, Docker valid, README updated |
 
 ---
-**Current Phase**: Phase 4
-**Last Updated**: Phase 3 completed — static ProjectAccessChecker removed, @Lazy constructor injection + instance checkProjectAccess; WebSocket tests 3/3 + full suite green
+**Current Phase**: Phase 5
+**Last Updated**: Phase 4 completed — Caffeine user_principals cache (5m TTL), @Cacheable loadUserByUsername, eviction on updateProfile/logout/deactivateMember + AuthPrincipalCacheTest; suite green

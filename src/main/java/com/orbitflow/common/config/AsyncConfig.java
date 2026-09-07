@@ -1,7 +1,7 @@
 package com.orbitflow.common.config;
 
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -23,6 +23,9 @@ public class AsyncConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        return new ConcurrentMapCacheManager("search", "reporting", "boards");
+        CaffeineCacheManager manager = new CaffeineCacheManager("search", "reporting", "boards", "user_principals");
+        // 5-minute TTL bounds stale principals; also caps other view caches.
+        manager.setCacheSpecification("expireAfterWrite=5m,maximumSize=10000");
+        return manager;
     }
 }

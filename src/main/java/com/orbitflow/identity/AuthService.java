@@ -9,9 +9,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -38,6 +42,7 @@ public class AuthService implements UserDetailsService {
     private final UserSessionRepository sessions;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwt;
+    private final CacheManager cacheManager;
 
     @Value("${orbitflow.jwt.refresh-token-ttl-days:14}")
     private long refreshTtlDays = 14;
@@ -88,6 +93,13 @@ public class AuthService implements UserDetailsService {
         sessions.findByRefreshTokenHash(sha256(refreshToken)).ifPresent(s -> {
             s.setRevoked(true);
             sessions.save(s);
+            // Evict the cached principal so revoked sessions cannot be re-resolved.
+            try {
+                Objects.requireNonNull(cacheManager.getCache("user_principals"))
+                        .evict(s.getUser().getId().toString());
+            } catch (Exception ignored) {
+                // caching is best-effort; logout itself must succeed
+            }
         });
     }
 
@@ -98,6 +110,7 @@ public class AuthService implements UserDetailsService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_principals", key = "#userId.toString()")
     public ProfileDto updateProfile(UUID userId, String displayName, String timezone, String avatarUrl) {
         User u = users.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (displayName != null && !displayName.isBlank()) u.setDisplayName(displayName.trim());
@@ -129,6 +142,7 @@ public class AuthService implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "user_principals", key = "#userId")
     public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
         try {
             User u = users.findById(UUID.fromString(userId))
