@@ -68,10 +68,19 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     if (!destColumnId) return;
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
+    // Precision LexoRank: compute neighbor cards in the destination column
+    // (sorted by rank, excluding the dragged card) around the drop position.
+    // Column-level droppable => append at end: prev = last remaining card, next = null.
+    const destCards = tasks
+      .filter((t) => t.columnId === destColumnId && t.id !== taskId)
+      .slice()
+      .sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0));
+    const prevTaskId: string | null = destCards.length > 0 ? destCards[destCards.length - 1].id : null;
+    const nextTaskId: string | null = null;
     // optimistic LexoRank: move locally first
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, columnId: destColumnId } : t)));
     try {
-      const updated = await tasksApi.move(taskId, destColumnId, task.version);
+      const updated = await tasksApi.move(taskId, destColumnId, task.version, prevTaskId, nextTaskId);
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
     } catch (err) {
       setConflict(err instanceof Error ? err.message : 'Move rejected (WIP limit or conflict). Reloading…');
@@ -100,7 +109,10 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
       <DndContext onDragEnd={onDragEnd}>
         <div className="flex gap-3 overflow-x-auto pb-4">
           {board.columns.map((col) => {
-            const colTasks = tasks.filter((t) => t.columnId === col.id);
+            const colTasks = tasks
+              .filter((t) => t.columnId === col.id)
+              .slice()
+              .sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0));
             const overLimit = col.wipLimit != null && colTasks.length > col.wipLimit;
             return (
               <Column key={col.id} id={col.id} title={col.name} wipLimit={col.wipLimit} count={colTasks.length} overLimit={overLimit}>

@@ -81,7 +81,7 @@ export const tasksApi = {
       method: 'POST',
       body: JSON.stringify({ title, columnId }),
     }),
-  move: (taskId: string, destinationColumnId: string, expectedVersion: number, prevTaskId?: string, nextTaskId?: string) =>
+  move: (taskId: string, destinationColumnId: string, expectedVersion: number, prevTaskId?: string | null, nextTaskId?: string | null) =>
     api<Task>(`/api/v1/tasks/${taskId}/move`, {
       method: 'POST',
       body: JSON.stringify({ destinationColumnId, expectedVersion, prevTaskId, nextTaskId }),

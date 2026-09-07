@@ -17,6 +17,7 @@ export function useWebSocket(boardId: string | null, onEvent: (e: RealtimeEvent)
   const [lastRevision, setLastRevision] = useState(0);
   const handler = useRef(onEvent);
   handler.current = onEvent;
+  const beatRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!boardId) return;
@@ -48,16 +49,19 @@ export function useWebSocket(boardId: string | null, onEvent: (e: RealtimeEvent)
           }
         });
         // presence heartbeat
-        const beat = setInterval(() => {
+        beatRef.current = setInterval(() => {
           client.publish({ destination: '/app/presence/heartbeat', body: JSON.stringify({ boardId }) });
         }, 30000);
-        (client as unknown as { __beat?: number }).__beat = beat as unknown as number;
       },
       onDisconnect: () => setStatus('disconnected'),
       onStompError: () => setStatus('disconnected'),
     });
     client.activate();
     return () => {
+      if (beatRef.current) {
+        clearInterval(beatRef.current);
+        beatRef.current = null;
+      }
       void client.deactivate();
       setStatus('disconnected');
     };
