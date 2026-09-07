@@ -96,9 +96,19 @@ bare resource UUID. Cross-workspace access is covered by `TenantIsolationTest`/`
 - Mentions (`@username`) are extracted, access-checked, deduplicated (one row per
   `eventType:resource:recipient`), self-mentions excluded. Email goes via `MailService`
   (Mailpit in prod, in-memory capture in tests).
-- Due-date reminders run in bounded batches (`NotificationWorker`); digests aggregate by recipient.
-- Search is a workspace-scoped LIKE fallback over tasks/documents today (Postgres FTS upgrade path
-  documented in code); results are re-authorized per row.
+- Due-date reminders run as a bounded database query (`findUpcomingDueTasks`, 200/batch);
+  digests aggregate by recipient.
+- Search executes workspace-scoped, paged JPQL (`searchTasks`/`searchDocuments`, max 50 hits,
+  V3 composite indexes); results are re-authorized per row. No in-memory table scans.
+- JWT authentication resolves `UserPrincipal` through a Caffeine cache (`user_principals`,
+  5-minute TTL), evicted on profile update, logout, and member deactivation.
+
+## Frontend Views
+
+Board (`/projects/:id`), Documents wiki (`/projects/:id/docs`, tree + editor + version restore),
+Reports (`/projects/:id/reports`, totals/cycle-time/milestones), header `GlobalSearch`
+(debounced, tasks + docs), and workspace member management (list + invite by role).
+Drag-and-drop sends precise LexoRank neighbors; the STOMP heartbeat interval is strictly cleaned up.
 
 ## Configuration
 
@@ -110,8 +120,8 @@ no Docker; Redis/S3 degrade gracefully to in-memory/local fallbacks.
 ## Testing
 
 ```bash
-./gradlew test            # backend: 40 tests (unit + MockMvc integration + security + E2E)
-cd frontend && npm test   # frontend: Vitest component tests
+./gradlew test            # backend: 41 tests (unit + MockMvc integration + security + E2E)
+cd frontend && npm test   # frontend: 7 Vitest component tests
 cd frontend && npm run build
 ```
 
@@ -120,4 +130,4 @@ cd frontend && npm run build
 `src/main/java/com/orbitflow/`: `common/` (config, security, exception, util),
 `identity/`, `workspace/`, `project/`, `board/`, `task/`, `comment/`, `document/`,
 `attachment/`, `outbox/`, `activity/`, `realtime/`, `notification/`, `search/`, `reporting/`;
-`src/main/resources/db/migration/` (Flyway V1 schema + V2 indexes); `frontend/src/` (Vite + React 18 + TS + Tailwind).
+`src/main/resources/db/migration/` (Flyway V1 schema + V2 indexes + V3 search/reminder indexes); `frontend/src/` (Vite + React 18 + TS + Tailwind).

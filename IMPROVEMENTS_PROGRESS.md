@@ -7,8 +7,8 @@
 | **Phase 3** | Eliminate Static Bean Anti-Pattern in WebSocket Interceptor | `[COMPLETED]` | Clean `@Lazy` injection, all WebSocket tests pass |
 | **Phase 4** | Cache UserPrincipal for Stateless JWT Authentication | `[COMPLETED]` | Spring Cache active, zero redundant DB calls on auth |
 | **Phase 5** | Expand Frontend UI Surface (Wiki, Search, Reports, Members) | `[COMPLETED]` | React SPA builds cleanly with new views |
-| **Phase 6** | Docker Healthcheck & Full End-to-End Verification | `[NOT STARTED]` | 100% tests green, Docker valid, README updated |
+| **Phase 6** | Docker Healthcheck & Full End-to-End Verification | `[COMPLETED]` | 100% tests green, Docker valid, README updated |
 
 ---
-**Current Phase**: Phase 6
-**Last Updated**: Phase 5 completed — GlobalSearch, DocumentWiki, ReportsView, WorkspaceMembersModal + App tabs/routes, hardened api client storage, views.test.tsx (5 tests); frontend 7/7 + backend green
+**Current Phase**: All 6 phases complete
+**Last Updated**: Phase 6 completed — app healthcheck in compose, README upgraded, full verification: backend 41/41, frontend 7/7 + clean build, zero findAll, zero static remnants
